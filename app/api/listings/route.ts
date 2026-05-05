@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json(data[0], { status: 201 });
+    return NextResponse.json(data?.[0] || { id: listingId, success: true }, { status: 201 });
   } catch (error) {
     console.error('Error adding listing:', error);
     return NextResponse.json(
