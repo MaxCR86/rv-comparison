@@ -15,23 +15,42 @@ export async function scrapeFacebookMarketplace(url: string): Promise<ScrapedDat
 
     const html = response.data;
 
-    const year = extractYear(html);
-    const price = extractPrice(html);
-    const location = extractLocation(html);
-    const seller_name = extractSellerName(html);
-    const seller_contact = extractSellerContact(html);
-    const ad_copy = extractAdCopy(html);
-    const published_date = extractPublishedDate(html);
-    const photo_urls = extractPhotoUrls(html);
+    // Extract from the page
+    let year = extractYear(html);
+    let price = extractPrice(html);
+    let location = extractLocation(html);
+    let seller_name = extractSellerName(html);
+    let ad_copy = extractAdCopy(html);
+    let photo_urls = extractPhotoUrls(html);
+
+    // If we got minimal data, try extracting from Open Graph metadata (useful for share links)
+    if (!price || !location || !ad_copy) {
+      const ogTitle = extractOpenGraphTag(html, 'og:title');
+      const ogDesc = extractOpenGraphTag(html, 'og:description');
+      const ogImage = extractOpenGraphTag(html, 'og:image');
+
+      if (ogDesc && !ad_copy) ad_copy = ogDesc;
+      if (ogImage && photo_urls.length === 0) photo_urls = [ogImage];
+
+      // Try to extract price from title or description
+      if (!price && ogTitle) {
+        const priceMatch = ogTitle.match(/\$[\d,]+/);
+        if (priceMatch) price = parseInt(priceMatch[0].replace(/[^\d]/g, ''));
+      }
+      if (!price && ogDesc) {
+        const priceMatch = ogDesc.match(/\$[\d,]+/);
+        if (priceMatch) price = parseInt(priceMatch[0].replace(/[^\d]/g, ''));
+      }
+    }
 
     return {
       year,
       price,
       location,
       seller_name,
-      seller_contact,
+      seller_contact: '',
       ad_copy,
-      published_date,
+      published_date: new Date().toISOString(),
       photo_urls,
     };
   } catch (error) {
@@ -41,40 +60,88 @@ export async function scrapeFacebookMarketplace(url: string): Promise<ScrapedDat
   }
 }
 
+function extractOpenGraphTag(html: string, property: string): string {
+  const regex = new RegExp(`<meta\\s+property="${property}"\\s+content="([^"]*)"`, 'i');
+  const match = html.match(regex);
+  return match ? match[1] : '';
+}
+
 function extractYear(html: string): number {
-  const match = html.match(/(\d{4})\s*(RV|trailer|rv)/i);
-  return match ? parseInt(match[1]) : new Date().getFullYear();
+  // Try to find year followed by RV/trailer keywords
+  const match = html.match(/(\d{4})\s+(RV|trailer|camper|motorhome)/i);
+  if (match) return parseInt(match[1]);
+
+  // Try to find year in common patterns
+  const yearMatch = html.match(/\b(19|20)\d{2}\b/);
+  return yearMatch ? parseInt(yearMatch[0]) : new Date().getFullYear();
 }
 
 function extractPrice(html: string): number {
-  const match = html.match(/\$[\d,]+/);
+  // Look for price in various formats: $1,234 or $1234
+  const match = html.match(/\$[\d,]+(?:\.\d{2})?/);
   return match ? parseInt(match[0].replace(/[^\d]/g, '')) : 0;
 }
 
 function extractLocation(html: string): string {
-  const match = html.match(/(?:Location|location)[\s:]*([^<\n]+)/);
-  return match ? match[1].trim() : 'Unknown';
+  // Look for location in common patterns
+  const patterns = [
+    /(?:Location|location)[:\s]+([A-Za-z\s,]+?)(?:<|$)/,
+    /(?:Located in|located in)[:\s]+([A-Za-z\s,]+?)(?:<|$)/,
+    /([\w\s]+),\s*(?:Nevada|CA|AZ|UT|OR|WA|TX|FL)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match) return match[1].trim();
+  }
+
+  return 'Unknown';
 }
 
 function extractSellerName(html: string): string {
-  const match = html.match(/(?:Seller|seller)[\s:]*([^<\n]+)/);
-  return match ? match[1].trim() : 'Unknown Seller';
-}
+  const patterns = [
+    /(?:Seller|seller)[:\s]+([^<\n]+)/,
+    /(?:By|posted by)[:\s]+([^<\n]+)/i,
+  ];
 
-function extractSellerContact(html: string): string {
-  return '';
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match) return match[1].trim();
+  }
+
+  return 'Unknown Seller';
 }
 
 function extractAdCopy(html: string): string {
-  const match = html.match(/<meta\s+property="og:description"\s+content="([^"]+)"/);
-  return match ? match[1] : '';
-}
+  // First try Open Graph description
+  const ogDesc = extractOpenGraphTag(html, 'og:description');
+  if (ogDesc) return ogDesc;
 
-function extractPublishedDate(html: string): string {
-  return new Date().toISOString();
+  // Try to extract from common patterns
+  const match = html.match(/<div[^>]*description[^>]*>([^<]+)<\/div>/i);
+  if (match) return match[1];
+
+  return '';
 }
 
 function extractPhotoUrls(html: string): string[] {
-  const matches = html.match(/https:\/\/[^\s"<>]+\.(jpg|png|webp)/gi);
-  return matches?.slice(0, 10) || [];
+  // Look for image URLs in various formats
+  const patterns = [
+    /https:\/\/[^\s"<>]+\.(?:jpg|png|webp|jpeg)/gi,
+    /"image":"(https:\/\/[^"]+)"/gi,
+  ];
+
+  const urls = new Set<string>();
+
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.exec(html)) !== null) {
+      urls.add(match[1] || match[0]);
+    }
+  }
+
+  // Filter out tracking/analytics URLs
+  return Array.from(urls)
+    .filter(url => !url.includes('analytics') && !url.includes('tracking'))
+    .slice(0, 10);
 }
