@@ -9,7 +9,7 @@ export async function getMaxRating() {
   const { data, error } = await supabaseServer
     .from('rv_listings')
     .select('rating')
-    .order('rating', { ascending: true })
+    .order('rating', { ascending: false })
     .limit(1);
 
   if (error) throw error;
