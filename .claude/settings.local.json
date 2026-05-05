@@ -9,7 +9,11 @@
       "Bash(rm -rf rvcomp_temp)",
       "Bash(mv /tmp/rvcomp_temp /Users/maxcr86/Documents/Vibe/RVComp)",
       "Bash(npm install *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Skill(update-config)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }
