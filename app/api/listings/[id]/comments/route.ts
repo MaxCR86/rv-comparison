@@ -29,7 +29,7 @@ export async function POST(
 
     if (error) throw error;
 
-    return NextResponse.json(data[0], { status: 201 });
+    return NextResponse.json(data?.[0] || { success: true }, { status: 201 });
   } catch (error) {
     console.error('Error adding comment:', error);
     return NextResponse.json(
