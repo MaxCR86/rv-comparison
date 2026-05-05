@@ -78,36 +78,85 @@ function extractYear(html: string): number {
 }
 
 function extractPrice(html: string): number {
-  // Look for price in various formats: $1,234 or $1234
-  const match = html.match(/\$[\d,]+(?:\.\d{2})?/);
-  return match ? parseInt(match[0].replace(/[^\d]/g, '')) : 0;
-}
-
-function extractLocation(html: string): string {
-  // Look for location in common patterns
+  // Try to find price in common Facebook patterns
   const patterns = [
-    /(?:Location|location)[:\s]+([A-Za-z\s,]+?)(?:<|$)/,
-    /(?:Located in|located in)[:\s]+([A-Za-z\s,]+?)(?:<|$)/,
-    /([\w\s]+),\s*(?:Nevada|CA|AZ|UT|OR|WA|TX|FL)/i,
+    /[>\s]\$[\d,]+(?:\.\d{2})?[<\s]/i,  // Price with context (spaces or tags around it)
+    /"price"[:\s]*"?\$?[\d,]+/i,  // JSON-like price field
+    /price[:\s]*\$?([\d,]+)/i,  // "price: $5000" pattern
+    /\$[\d,]{4,}/,  // Price with at least 4 digits (more likely to be real)
   ];
 
   for (const pattern of patterns) {
     const match = html.match(pattern);
-    if (match) return match[1].trim();
+    if (match) {
+      const priceStr = match[0].replace(/[^\d]/g, '');
+      const price = parseInt(priceStr);
+      if (price > 100) return price;  // Sanity check: RV prices should be > $100
+    }
+  }
+
+  return 0;
+}
+
+function extractLocation(html: string): string {
+  // Try multiple patterns for location extraction
+  const patterns = [
+    // Pattern 1: Explicit location labels with real location names
+    /(?:Location|location)[:\s]+([A-Za-z\s,]{2,50}?)(?:is approximate|<br|<\/div|$)/,
+    // Pattern 2: "Located in City, State" format
+    /(?:Located in|located in)[:\s]+([A-Za-z\s,]{2,50}?)(?:<|$)/,
+    // Pattern 3: City, State pattern at start of line or after specific tags
+    /(?:<(?:p|div|span)[^>]*>)?\s*([A-Za-z\s]+),\s*(?:Nevada|CA|California|AZ|Arizona|UT|Utah|OR|Oregon|WA|Washington|TX|Texas|FL|Florida)\b/i,
+    // Pattern 4: Zipcode + city/state pattern (common in marketplace listings)
+    /\d{5}[,-]?\s*([A-Za-z\s]+,\s*(?:NV|CA|AZ|UT|OR|WA|TX|FL))\b/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match) {
+      const location = match[1].trim();
+      // Filter out common false positives
+      if (location &&
+          location.length > 2 &&
+          location.length < 100 &&
+          !location.toLowerCase().includes('is approximate') &&
+          !location.match(/^[\d\s]+$/)) {
+        return location;
+      }
+    }
   }
 
   return 'Unknown';
 }
 
 function extractSellerName(html: string): string {
+  // Try multiple patterns to extract seller name
   const patterns = [
-    /(?:Seller|seller)[:\s]+([^<\n]+)/,
-    /(?:By|posted by)[:\s]+([^<\n]+)/i,
+    // Pattern 1: Explicit seller label with name (avoid grabbing code)
+    /(?:Seller|seller)[:\s]+([A-Za-z\s'-]{2,50})(?:<|$|\n)/,
+    // Pattern 2: "Posted by" or "By" pattern
+    /(?:Posted by|posted by|By|by)[:\s]+([A-Za-z\s'-]{2,50})(?:<|$|\n)/i,
+    // Pattern 3: Profile name in quotes
+    /"name"[:\s]*"([A-Za-z\s'-]{2,50})"/i,
+    // Pattern 4: Look for seller info in specific Facebook divs/spans
+    />([A-Za-z\s'-]{2,50})<\/a>.*?sells?/i,
   ];
 
   for (const pattern of patterns) {
     const match = html.match(pattern);
-    if (match) return match[1].trim();
+    if (match) {
+      const name = match[1].trim();
+      // Filter out corrupted results (containing code characters, URLs, etc.)
+      if (name &&
+          name.length > 2 &&
+          name.length < 100 &&
+          !name.match(/[{}()<>[\]`\\/]/g) &&
+          !name.includes('function') &&
+          !name.includes('window.') &&
+          !name.includes('${')) {
+        return name;
+      }
+    }
   }
 
   return 'Unknown Seller';
