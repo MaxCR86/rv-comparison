@@ -35,8 +35,9 @@ export async function scrapeFacebookMarketplace(url: string): Promise<ScrapedDat
       photo_urls,
     };
   } catch (error) {
-    console.error('Scraping error:', error);
-    throw new Error('Failed to scrape marketplace listing');
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error('Scraping error:', errorMsg);
+    throw new Error(`Scraping failed: ${errorMsg}`);
   }
 }
 
