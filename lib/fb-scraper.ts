@@ -5,7 +5,7 @@ export async function scrapeFacebookMarketplace(url: string): Promise<ScrapedDat
   const apiKey = process.env.SCRAPINGBEE_API_KEY!;
 
   try {
-    const response = await axios.get('https://api.scrapingbee.com/api/v1', {
+    const response = await axios.get('https://app.scrapingbee.com/api/v1', {
       params: {
         api_key: apiKey,
         url: url,
