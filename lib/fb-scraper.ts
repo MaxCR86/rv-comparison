@@ -9,7 +9,8 @@ export async function scrapeFacebookMarketplace(url: string): Promise<ScrapedDat
       params: {
         api_key: apiKey,
         url: url,
-        render_javascript: 'true',
+        render_js: 'true',
+        stealth_proxy: 'true',
       },
     });
 
