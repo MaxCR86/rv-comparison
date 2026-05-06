@@ -98,7 +98,7 @@ async function runStandardTests(browser, page) {
 
   // Test 5: Voting works
   await test('Voting - Upvote button exists and clickable', async () => {
-    const upvoteBtn = await page.locator('button:has-text("↑")').first();
+    const upvoteBtn = await page.locator('button:has-text("Upvote")').first();
     const visible = await upvoteBtn.isVisible().catch(() => false);
     if (!visible) throw new Error('Upvote button not found');
   });
@@ -124,20 +124,35 @@ async function runStandardTests(browser, page) {
   // Test 8: Responsive design
   await test('Responsive - Mobile view', async () => {
     await page.setViewportSize({ width: 320, height: 568 });
-    const content = await page.locator('main').isVisible();
-    if (!content) throw new Error('Main content not visible on mobile');
+    await page.goto(TEST_URL, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(500);
+    const main = await page.locator('main');
+    const count = await main.count();
+    if (count === 0) throw new Error('Main element not found');
+    const visible = await main.isVisible().catch(() => false);
+    if (!visible) throw new Error('Main content not visible on mobile');
   });
 
   await test('Responsive - Tablet view', async () => {
     await page.setViewportSize({ width: 768, height: 1024 });
-    const content = await page.locator('main').isVisible();
-    if (!content) throw new Error('Main content not visible on tablet');
+    await page.goto(TEST_URL, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(500);
+    const main = await page.locator('main');
+    const count = await main.count();
+    if (count === 0) throw new Error('Main element not found');
+    const visible = await main.isVisible().catch(() => false);
+    if (!visible) throw new Error('Main content not visible on tablet');
   });
 
   await test('Responsive - Desktop view', async () => {
     await page.setViewportSize({ width: 1280, height: 800 });
-    const content = await page.locator('main').isVisible();
-    if (!content) throw new Error('Main content not visible on desktop');
+    await page.goto(TEST_URL, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(500);
+    const main = await page.locator('main');
+    const count = await main.count();
+    if (count === 0) throw new Error('Main element not found');
+    const visible = await main.isVisible().catch(() => false);
+    if (!visible) throw new Error('Main content not visible on desktop');
   });
 
   // Test 9: API endpoints
@@ -166,11 +181,12 @@ async function runAdversaryTests(browser, page) {
 
   await test('Chaos - Page survives rapid navigation', async () => {
     for (let i = 0; i < 3; i++) {
-      await page.goto(TEST_URL);
-      await page.goto(`${TEST_URL}/edit`);
-      await page.goBack();
+      await page.goto(TEST_URL, { waitUntil: 'domcontentloaded' });
+      await page.goto(`${TEST_URL}/edit`, { waitUntil: 'domcontentloaded' });
+      await page.goBack({ waitUntil: 'domcontentloaded' });
     }
-    const content = await page.content();
+    await page.waitForTimeout(500);
+    const content = await page.content().catch(() => '');
     if (content.length < 1000) throw new Error('Page corrupted');
   });
 
