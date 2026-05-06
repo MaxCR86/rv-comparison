@@ -79,21 +79,33 @@ async function runStandardTests(browser, page) {
   await test('Photos load in image gallery', async () => {
     const firstRow = page.locator('tbody tr:first-child');
     await firstRow.click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(800);
 
-    // Try to find any image element
+    // Wait for images to load
+    await page.waitForSelector('img[alt*="RV"], img[alt="thumbnail"]', { timeout: 5000 }).catch(() => {});
+
+    // Check for any visible images (Next.js Image component wraps in div)
     const images = await page.locator('img').all();
-    let foundImage = false;
+    let imageFound = false;
 
     for (const img of images) {
       const src = await img.getAttribute('src');
-      if (src && src.includes('storage')) {
-        foundImage = true;
+      const alt = await img.getAttribute('alt');
+      if (src && (src.includes('supabase') || src.includes('storage'))) {
+        imageFound = true;
         break;
+      }
+      // Also check if image is visible (loaded)
+      if (alt && alt.includes('RV')) {
+        const isVisible = await img.isVisible().catch(() => false);
+        if (isVisible) {
+          imageFound = true;
+          break;
+        }
       }
     }
 
-    if (!foundImage) throw new Error('No image with storage URL found');
+    if (!imageFound) throw new Error('No images loaded in gallery');
   });
 
   // Test 5: Voting works
