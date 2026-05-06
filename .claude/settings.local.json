@@ -13,7 +13,32 @@
       "Skill(update-config)",
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(gh repo *)",
+      "Bash(brew install *)",
+      "Bash(gh auth *)",
+      "Read(//opt/homebrew/**)",
+      "Read(//usr/local/**)",
+      "Bash(/opt/homebrew/bin/gh *)",
+      "Bash(export PATH=\"/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin\")",
+      "Bash(vercel --prod)",
+      "Bash(git push *)",
+      "Bash(npx supabase *)",
+      "Bash(npx vercel *)",
+      "Bash(curl -X POST https://rv-comparison.vercel.app/api/listings -H 'Content-Type: application/json' -d '{\"fb_url\":\"https://www.facebook.com/marketplace/item/123\",\"password\":\"ThisIsHe\"}')",
+      "Bash(curl -s -X POST https://rv-comparison.vercel.app/api/listings -H 'Content-Type: application/json' -d '{\"fb_url\":\"https://www.facebook.com/marketplace/item/123\",\"password\":\"ThisIsHe\"}')",
+      "Bash(curl -s -X POST https://rv-comparison.vercel.app/api/listings -H 'Content-Type: application/json' -d '{\"fb_url\":\"https://www.facebook.com/share/1BJcBcieyk/\",\"password\":\"ThisIsHe\"}')",
+      "Bash(curl -v -X POST https://rv-comparison.vercel.app/api/listings -H 'Content-Type: application/json' -d '{\"fb_url\":\"https://www.facebook.com/share/1BJcBcieyk/\",\"password\":\"ThisIsHe\"}')",
+      "Bash(curl *)",
+      "Bash(nslookup api.scrapingbee.com)",
+      "Bash(dig api.scrapingbee.com)",
+      "Bash(host api.scrapingbee.com)",
+      "Bash(nslookup scrapingbee.com)",
+      "WebFetch(domain:www.scrapingbee.com)",
+      "Bash(gh api *)",
+      "Bash(cat)",
+      "Bash(chmod +x /tmp/qa-tests.sh)",
+      "Bash(/tmp/qa-tests.sh)"
     ]
   }
 }

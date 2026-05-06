@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabase';
 
 interface ImageGalleryProps {
   photoPaths: string[];
@@ -10,14 +9,42 @@ interface ImageGalleryProps {
 
 export default function ImageGallery({ photoPaths }: ImageGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [thumbnailUrls, setThumbnailUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchImageUrl = async () => {
+      if (!photoPaths || photoPaths.length === 0) return;
+
+      const currentPath = photoPaths[currentIndex];
+      const response = await fetch(`/api/photos/${currentPath}`);
+      const data = await response.json();
+      setImageUrl(data.url || '');
+    };
+
+    fetchImageUrl();
+  }, [currentIndex, photoPaths]);
+
+  useEffect(() => {
+    const fetchThumbnails = async () => {
+      if (!photoPaths || photoPaths.length === 0) return;
+
+      const urls = await Promise.all(
+        photoPaths.map(async (path) => {
+          const response = await fetch(`/api/photos/${path}`);
+          const data = await response.json();
+          return data.url || '';
+        })
+      );
+      setThumbnailUrls(urls);
+    };
+
+    fetchThumbnails();
+  }, [photoPaths]);
 
   if (!photoPaths || photoPaths.length === 0) {
     return <div className="w-full h-48 bg-gray-200 flex items-center justify-center">No images</div>;
   }
-
-  const currentPath = photoPaths[currentIndex];
-  const { data } = supabase.storage.from('rv-photos').getPublicUrl(currentPath);
-  const imageUrl = data.publicUrl;
 
   const handleNext = () => {
     setCurrentIndex((currentIndex + 1) % photoPaths.length);
@@ -54,7 +81,7 @@ export default function ImageGallery({ photoPaths }: ImageGalleryProps) {
         )}
       </div>
 
-      {photoPaths.length > 1 && (
+      {photoPaths.length > 1 && thumbnailUrls.length > 0 && (
         <div className="flex gap-2 overflow-x-auto">
           {photoPaths.map((path, index) => (
             <button
@@ -65,12 +92,14 @@ export default function ImageGallery({ photoPaths }: ImageGalleryProps) {
               }`}
             >
               <div className="relative w-full h-full">
-                <Image
-                  src={supabase.storage.from('rv-photos').getPublicUrl(path).data.publicUrl}
-                  alt="thumbnail"
-                  fill
-                  className="object-cover"
-                />
+                {thumbnailUrls[index] && (
+                  <Image
+                    src={thumbnailUrls[index]}
+                    alt="thumbnail"
+                    fill
+                    className="object-cover"
+                  />
+                )}
               </div>
             </button>
           ))}
