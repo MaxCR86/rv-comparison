@@ -44,6 +44,18 @@ export async function POST(request: NextRequest) {
     }
 
     const scrapedData = await scrapeFacebookMarketplace(fb_url);
+
+    // Validate extracted data before storing
+    if (scrapedData.seller_name.length > 200 || /[{}[\]"\\]/g.test(scrapedData.seller_name)) {
+      scrapedData.seller_name = 'Unknown Seller';
+    }
+    if (scrapedData.location.includes('is approximate') || scrapedData.location.length > 100) {
+      scrapedData.location = 'Unknown';
+    }
+    if (scrapedData.price === 0 || scrapedData.price === 1) {
+      scrapedData.price = 0;
+    }
+
     const distance_miles = await calculateDistance(scrapedData.location);
     const maxRating = await getMaxRating();
     const newRating = maxRating + 1;
