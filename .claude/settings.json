@@ -1,0 +1,15 @@
+{
+  "enabledPlugins": {
+    "vercel@claude-plugins-official": true,
+    "supabase@claude-plugins-official": true,
+    "house@max-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "max-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "MaxCR86/claude-plugins"
+      }
+    }
+  }
+}
