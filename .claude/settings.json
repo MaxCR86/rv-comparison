@@ -11,5 +11,31 @@
         "repo": "MaxCR86/claude-plugins"
       }
     }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat \"$CLAUDE_PROJECT_DIR/scripts/hooks/HOUSE-RULES.md\"",
+            "timeout": 5
+          }
+        ],
+        "_source": "house-rules"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/scripts/hooks/spend_guard.py\"; if command -v python3 >/dev/null && [ -f \"$f\" ]; then python3 \"$f\"; s=$?; [ $s -eq 0 ] && exit 0; [ $s -eq 2 ] && exit 2; fi; echo \"TOP-UP GUARD IS BROKEN, so every tool call is blocked on purpose (fail-closed). Cause: python3 or this repo's scripts/hooks/spend_guard.py is missing or crashing. Fix: install python3 or restore that file from MaxCR86/claude-plugins (plugin/hooks/spend_guard.py); last resort: remove this PreToolUse hook from the repo's .claude/settings.json.\" >&2; exit 2",
+            "timeout": 10
+          }
+        ],
+        "_source": "max-topup-iron-rule"
+      }
+    ]
   }
 }
